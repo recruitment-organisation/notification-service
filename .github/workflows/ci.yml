@@ -47,7 +47,6 @@ jobs:
         run: chmod +x mvnw
 
 
-
       - name: Build application
         run: ./mvnw package -DskipTests
 
@@ -80,6 +79,7 @@ jobs:
       - name: Checkout source code
         uses: actions/checkout@v4
 
+      # Télécharge le JAR produit dans le job CI.
       - name: Download application JAR
         uses: actions/download-artifact@v4
         with:
