@@ -40,13 +40,13 @@ public class NotificationController {
     }
 
     @GetMapping("/mine")
-    @PreAuthorize("hasAnyRole('CANDIDATE', 'HR', 'MANAGER')")
+    @PreAuthorize("hasAnyRole('CANDIDATE', 'HR', 'MANAGER', 'EMPLOYEE')")
     public ResponseEntity<Page<CandidateNotificationDto>> mine(@AuthenticationPrincipal Jwt jwt, Pageable pageable) {
         return ResponseEntity.ok(notificationService.findMine(jwt.getSubject(), roles(jwt), pageable));
     }
 
     @PatchMapping("/{notificationId}/read")
-    @PreAuthorize("hasAnyRole('CANDIDATE', 'HR', 'MANAGER')")
+    @PreAuthorize("hasAnyRole('CANDIDATE', 'HR', 'MANAGER', 'EMPLOYEE')")
     public ResponseEntity<CandidateNotificationDto> markAsRead(
             @PathVariable Long notificationId,
             @AuthenticationPrincipal Jwt jwt
