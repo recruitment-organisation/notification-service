@@ -3,6 +3,7 @@ package recruitment.dev.notificationservice.dto;
 public enum NotificationType {
     REJECTION,
     WELCOME,
+    OFFER_ACCEPTED,
     CV_TIMEOUT,
     CV_REVISION_REQUIRED,
     CANDIDATE_REGISTERED,

@@ -31,11 +31,18 @@ public class NotificationServiceImpl implements NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final NotificationReadRepository notificationReadRepository;
+    private final OfferEmailService offerEmailService;
 
     @Override
     @Transactional
     public NotificationResponse send(SendNotificationRequest request) {
         String subject = resolveSubject(request);
+        String message = resolveMessage(request);
+        EmailDeliveryResult emailDelivery = request.type() == NotificationType.OFFER_ACCEPTED
+                ? offerEmailService.sendOffer(request.recipientEmail(), subject, message)
+                : EmailDeliveryResult.DISABLED;
+        String status = emailDelivery == EmailDeliveryResult.FAILED ? "EMAIL_FAILED" : "DELIVERED";
+        String channel = emailDelivery == EmailDeliveryResult.SENT ? "IN_APP_EMAIL" : "IN_APP";
         Notification notification = notificationRepository.save(Notification.builder()
                 .candidateId(request.candidateId())
                 .candidateKeycloakId(request.candidateKeycloakId())
@@ -43,12 +50,12 @@ public class NotificationServiceImpl implements NotificationService {
                 .recipientEmail(request.recipientEmail())
                 .type(request.type())
                 .subject(subject)
-                .message(resolveMessage(request))
-                .status("DELIVERED")
-                .channel("IN_APP")
+                .message(message)
+                .status(status)
+                .channel(channel)
                 .createdAt(LocalDateTime.now())
                 .build());
-        return new NotificationResponse("DELIVERED", "IN_APP", request.recipientEmail(), subject);
+        return new NotificationResponse(notification.getStatus(), notification.getChannel(), request.recipientEmail(), subject);
     }
 
     @Override
@@ -208,6 +215,7 @@ public class NotificationServiceImpl implements NotificationService {
         return switch (request.type()) {
             case REJECTION, APPLICATION_UPDATED -> "Mise à jour de votre candidature";
             case WELCOME -> "Bienvenue dans l’équipe";
+            case OFFER_ACCEPTED -> "Votre offre d’emploi";
             case CV_TIMEOUT -> "Délai de correction du CV expiré";
             case CV_REVISION_REQUIRED -> "Révision de CV requise";
             case APPLICATION_RECEIVED -> "Nouvelle candidature reçue";

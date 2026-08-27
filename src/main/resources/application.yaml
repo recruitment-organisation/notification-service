@@ -2,55 +2,10 @@ spring:
   application:
     name: notification-service
 
+  config:
+    import: configserver:${CONFIG_SERVICE_URL:http://localhost:9999}
+
   cloud:
     config:
       enabled: true
       label: main
-
-  config:
-    import: optional:configserver:${CONFIG_SERVICE_URL:http://localhost:9999}
-
-  datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5436/notification_db}
-    username: ${DB_USERNAME:admin}
-    password: ${DB_PASSWORD:admin123}
-    driver-class-name: org.postgresql.Driver
-
-  jpa:
-    hibernate:
-      ddl-auto: update
-    open-in-view: false
-
-  kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
-    consumer:
-      group-id: notification-service-v1
-      auto-offset-reset: earliest
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          jwk-set-uri: ${KEYCLOAK_SERVER_URL:http://localhost:8080}/realms/${KEYCLOAK_REALM:micro-service}/protocol/openid-connect/certs
-          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8080}/realms/${KEYCLOAK_REALM:micro-service}
-
-
-server:
-  port: 8093
-
-eureka:
-  client:
-    service-url:
-      defaultZone: ${DISCOVERY_SERVICE_URL:http://localhost:8761/eureka}
-    register-with-eureka: true
-    fetch-registry: true
-  instance:
-    prefer-ip-address: true
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info

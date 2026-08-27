@@ -22,17 +22,24 @@ import java.util.Set;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class NotificationServiceImplTest {
 
     private final NotificationRepository notificationRepository = mock(NotificationRepository.class);
     private final NotificationReadRepository notificationReadRepository = mock(NotificationReadRepository.class);
-    private final NotificationServiceImpl service = new NotificationServiceImpl(notificationRepository, notificationReadRepository);
+    private final OfferEmailService offerEmailService = mock(OfferEmailService.class);
+    private final NotificationServiceImpl service = new NotificationServiceImpl(
+            notificationRepository,
+            notificationReadRepository,
+            offerEmailService
+    );
 
     @Test
     void storesAnInAppNotificationWithoutSendingEmail() {
@@ -44,6 +51,39 @@ class NotificationServiceImplTest {
         assertThat(response.status()).isEqualTo("DELIVERED");
         assertThat(response.channel()).isEqualTo("IN_APP");
         verify(notificationRepository).save(any(Notification.class));
+        verifyNoInteractions(offerEmailService);
+    }
+
+    @Test
+    void sendsEmailAndStoresInAppNotificationForAnAcceptedOffer() {
+        when(notificationRepository.save(any(Notification.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(offerEmailService.sendOffer(
+                eq("candidate@test.local"),
+                eq("Votre offre d'emploi – Ingénieur DevOps"),
+                eq("Félicitations, votre candidature est retenue.")
+        )).thenReturn(EmailDeliveryResult.SENT);
+
+        NotificationResponse response = service.send(new SendNotificationRequest(
+                7L,
+                "candidate-keycloak-id",
+                12L,
+                "candidate@test.local",
+                NotificationType.OFFER_ACCEPTED,
+                "Votre offre d'emploi – Ingénieur DevOps",
+                "Félicitations, votre candidature est retenue."
+        ));
+
+        assertThat(response.status()).isEqualTo("DELIVERED");
+        assertThat(response.channel()).isEqualTo("IN_APP_EMAIL");
+        verify(offerEmailService).sendOffer(
+                "candidate@test.local",
+                "Votre offre d'emploi – Ingénieur DevOps",
+                "Félicitations, votre candidature est retenue."
+        );
+        verify(notificationRepository).save(argThat(notification ->
+                notification.getType() == NotificationType.OFFER_ACCEPTED
+                        && "IN_APP_EMAIL".equals(notification.getChannel())
+        ));
     }
 
     @Test
